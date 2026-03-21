@@ -20,7 +20,7 @@ def crossfilter_chart(df: pd.DataFrame):
             ],
         )
         .add_params(state_sel)
-        .properties(height=140, title="Revenue by state (click to filter)")
+        .properties(height=140, title="Revenue by state")
     )
 
     line_month = (
@@ -36,7 +36,7 @@ def crossfilter_chart(df: pd.DataFrame):
             ],
         )
         .transform_filter(state_sel)
-        .properties(height=140, title="Revenue over time (filtered)")
+        .properties(height=140, title="Revenue over time ")
     )
 
     cat_bar = (
@@ -54,7 +54,7 @@ def crossfilter_chart(df: pd.DataFrame):
         .transform_filter(state_sel)
         .transform_window(rank="rank(sum(order_value))")
         .transform_filter(alt.datum.rank <= 10)
-        .properties(height=140, title="Top categories (filtered)")
+        .properties(height=140, title="Top categories")
     )
 
     chart = alt.vconcat(

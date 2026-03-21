@@ -23,12 +23,12 @@ def order_map_chart(df: pd.DataFrame):
         mapbox_style="carto-positron",
         hover_data={"customer_city": True, "order_value": ":,.0f", "geolocation_lat": False, "geolocation_lng": False},
         title="Customer Order Density Map",
-        height=400,
+        height=360,
     )
 
     fig.update_layout(
         showlegend=False,
-        margin=dict(l=0, r=0, t=12, b=0)
+        margin=dict(l=10, r=10, t=30, b=0)
     )
 
     return fig

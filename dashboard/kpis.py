@@ -12,10 +12,41 @@ def render_kpis(df):
     avg_review = df["review_score"].dropna().mean()
     avg_delay_late = delivered[delivered["delay_days"] > 0]["delay_days"].mean() if not delivered.empty else 0
 
-    col1, col2, col3, col4, col5 = st.columns(5)
-    col1.metric("Total Revenue", f"{total_revenue:,.0f} BRL")
-    col2.metric("Total Orders", f"{orders:,}")
-    col3.metric("Avg Order Value", f"{avg_order_value:,.0f} BRL")
-    col4.metric("On-Time Delivery Rate", f"{on_time_rate:.0%}")
-    col5.metric("Avg Review Score", f"{avg_review:,.2f}")
+    cards = [
+        ("💰", "Total Revenue", f"{total_revenue/1_000_000:,.2f} M BRL", "Filtered view"),
+        ("📦", "Total Orders", f"{orders:,}", "Unique orders"),
+        ("💳", "Avg Order Value", f"{avg_order_value:,.0f} BRL", "Per order"),
+        ("⏱️", "On-Time Delivery Rate", f"{on_time_rate:.0%}", "Delivered on/early"),
+        ("⭐", "Avg Review Score", f"{avg_review:,.2f}", "Customer ratings"),
+    ]
 
+    st.markdown(
+        """
+        <style>
+        .kpi-card {
+            padding: 10px 12px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+        }
+        .kpi-label { font-size: 13px; color: #475569; font-weight: 600; }
+        .kpi-value { font-size: 22px; color: #0f172a; font-weight: 800; margin-top: 4px; }
+        .kpi-sub { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    cols = st.columns(len(cards))
+    for col, (icon, label, value, sub) in zip(cols, cards):
+        col.markdown(
+            f"""
+            <div class="kpi-card">
+                <div class="kpi-label">{icon} {label}</div>
+                <div class="kpi-value">{value}</div>
+                <div class="kpi-sub">{sub}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )

@@ -89,7 +89,7 @@ def main():
 
         render_kpis(filtered)
 
-        map_col, chart_col = st.columns([1.2, 1.6], gap="medium")
+        map_col, chart_col = st.columns([1.35, 1.45], gap="medium")
         with map_col:
 
             fig_map = order_map_chart(filtered)
