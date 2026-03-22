@@ -1,31 +1,44 @@
+from typing import Optional
+
 import pandas as pd
 import plotly.express as px
 from .utils import tighten, default_height
 
 
-def top_categories_chart(df: pd.DataFrame):
+def top_categories_chart(df: pd.DataFrame, *, height: Optional[int] = None):
+    """Horizontal bar chart of the top 10 categories by revenue.
+
+    A height can be supplied to better fit different layout slots; defaults
+    to the shared chart height used elsewhere.
+    """
+
     top_cat = (
-        df.groupby("top_category")["order_id"]
-        .nunique()
-        .nlargest(10)
+        df.groupby("top_category")
+        .agg(revenue=("order_value", "sum"), orders=("order_id", "nunique"))
+        .nlargest(10, "revenue")
         .reset_index()
-        .rename(columns={"order_id": "orders"})
     )
+
     fig = px.bar(
         top_cat,
-        x="orders",
+        x="revenue",
         y="top_category",
         orientation="h",
-        text_auto=True,
-        title="Top 10 Categories (Orders)",
-        labels={"orders": "Orders", "top_category": "Category"},
-        height=default_height(),
-        color="orders",
+        text="revenue",
+        title="Top 10 Categories (Revenue)",
+        labels={"revenue": "Revenue (BRL)", "top_category": "Category"},
+        height=height or default_height(),
+        color="revenue",
         color_continuous_scale="Blues",
     )
+
     fig.update_layout(coloraxis_showscale=False)
     fig.update_traces(
-        hovertemplate="%{y}: %{x:,.0f} orders",
+        hovertemplate="%{y}<br>Revenue: %{x:,.0f} BRL<br>Orders: %{customdata[0]:,}",
+
+        textfont_size=11,
+        textposition="outside",
+        cliponaxis=False,
+        customdata=top_cat[["orders"]],
     )
-    fig.update_traces(textfont_size=11, textposition="outside", cliponaxis=False)
     return tighten(fig)

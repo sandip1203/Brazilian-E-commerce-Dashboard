@@ -5,8 +5,7 @@ from .top_categories import top_categories_chart
 from .payment_mix import payment_mix_chart
 from .delivery_by_state import delivery_by_state_chart
 from .delivery_hist import delivery_hist_chart
-from .order_map import order_map_chart
-from .crossfilter_altair import crossfilter_chart
+from .revenue_state import revenue_state_chart
 
 __all__ = [
     "monthly_revenue_chart",
@@ -14,6 +13,5 @@ __all__ = [
     "payment_mix_chart",
     "delivery_by_state_chart",
     "delivery_hist_chart",
-    "order_map_chart",
-    "crossfilter_chart",
+    "revenue_state_chart",
 ]
