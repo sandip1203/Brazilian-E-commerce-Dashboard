@@ -19,7 +19,8 @@ def revenue_state_chart(df: pd.DataFrame, height=None):
         labels={"customer_state": "State", "order_value": "Revenue (BRL)"},
         height=height or default_height(),
         color="order_value",
-        color_continuous_scale="Blues",
+color_continuous_scale="Viridis",
+
     )
     fig.update_layout(coloraxis_showscale=False)
     fig.update_traces(

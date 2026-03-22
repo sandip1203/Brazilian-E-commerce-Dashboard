@@ -23,16 +23,20 @@ def render_kpis(df):
     st.markdown(
         """
         <style>
+        div[data-testid="stHorizontalBlock"]:has(div.kpi-card) {
+            margin-top: -0.35rem !important;
+            margin-bottom: -0.5rem !important;
+        }
         .kpi-card {
-            padding: 10px 12px;
-            border-radius: 10px;
+            padding: 6px 10px;
+            border-radius: 8px;
             background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
             border: 1px solid #e5e7eb;
             box-shadow: 0 2px 6px rgba(0,0,0,0.06);
         }
-        .kpi-label { font-size: 13px; color: #475569; font-weight: 600; }
-        .kpi-value { font-size: 22px; color: #0f172a; font-weight: 800; margin-top: 4px; }
-        .kpi-sub { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+        .kpi-label { font-size: 12px; color: #475569; font-weight: 600; line-height: 1.2; }
+        .kpi-value { font-size: 20px; color: #0f172a; font-weight: 800; margin-top: 2px; line-height: 1.15; }
+        .kpi-sub { font-size: 10px; color: #94a3b8; margin-top: 1px; line-height: 1.2; }
         </style>
         """,
         unsafe_allow_html=True,
