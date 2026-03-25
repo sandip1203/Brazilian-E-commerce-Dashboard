@@ -1,7 +1,9 @@
 import plotly.express as px
+import pandas as pd
 import streamlit as st
 from dashboard.data import load_dataset, filter_data
 from dashboard.kpis import render_kpis
+from dashboard.charts import correlation_heatmap
 try:
     # Enables click-to-filter on Plotly charts inside Streamlit
     from streamlit_plotly_events import plotly_events
@@ -11,7 +13,6 @@ from dashboard.charts import (
     monthly_revenue_chart,
     top_categories_chart,
     payment_mix_chart,
-    delivery_by_state_chart,
     delivery_hist_chart,
     revenue_state_chart,
 )
@@ -32,17 +33,6 @@ NAV_BAR_TEXT = "#f8fafc"
 def _css_single_quoted(s: str) -> str:
     """Escape a string for safe use inside CSS single-quoted content: '...'."""
     return s.replace("\\", "\\\\").replace("'", "\\'")
-CORR_FEATURES = [
-    "price",
-    "freight_value",
-    "product_weight_g",
-    "product_length_cm",
-    "product_height_cm",
-    "product_width_cm",
-    "payment_value",
-    "review_score",
-]
-
 # Use transparent backgrounds so the app can sit on light or dark themes
 px.defaults.color_discrete_sequence = px.colors.qualitative.Vivid
 
@@ -155,9 +145,30 @@ def render_filters(df):
         '<div class="filters-panel"><h3>Filters</h3></div>',
         unsafe_allow_html=True,
     )
-    min_date = df["order_purchase_timestamp"].min().date()
-    max_date = df["order_purchase_timestamp"].max().date()
-    date_range = st.slider("Order date range", min_date, max_date, (min_date, max_date))
+    month_options = [
+        "2017-01",
+        "2017-02",
+        "2017-03",
+        "2017-04",
+        "2017-05",
+        "2017-06",
+        "2017-07",
+        "2017-08",
+        "2017-09",
+        "2017-10",
+        "2017-11",
+        "2017-12",
+        "2018-01",
+        "2018-02",
+        "2018-03",
+        "2018-04",
+        "2018-05",
+        "2018-06",
+        "2018-07",
+        "2018-08",
+    ]
+    default_months = month_options[-6:] if len(month_options) > 6 else month_options
+    month_choice = st.multiselect("Order Year-Month", options=month_options, default=default_months)
 
     states = sorted(df["customer_state"].dropna().unique())
     default_states = states if len(states) <= 8 else states[:8]
@@ -173,34 +184,10 @@ def render_filters(df):
 
     review_choice = st.slider("Review score", 1.0, 5.0, (1.0, 5.0), step=0.5)
 
-    status_options = ["On Time", "Late", "Unknown"]
+    status_options = ["On Time", "Late"]
     status_choice = st.multiselect("Delivery status", options=status_options, default=[])
 
-    return date_range, state_choice, category_choice, payment_choice, review_choice, status_choice
-
-
-def correlation_heatmap(df):
-    usable_cols = [c for c in CORR_FEATURES if c in df.columns]
-    if len(usable_cols) < 2 or df.empty:
-        return None
-    corr = df[usable_cols].corr(numeric_only=True)
-    fig = px.imshow(
-        corr,
-        text_auto=".2f",
-        color_continuous_scale="RdBu_r",
-        zmin=-1,
-        zmax=1,
-        height=220,
-        labels=dict(color="Corr"),
-
-    )
-    fig.update_layout(
-        margin=dict(l=0, r=0, t=40, b=0),
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-    )
-    fig.update_xaxes(side="top")
-    return fig
+    return month_choice, state_choice, category_choice, payment_choice, review_choice, status_choice
 
 
 def bordered_container():
@@ -235,7 +222,15 @@ def main():
 
     with right_col:
         filters = render_filters(df)
-        corr_box = st.container()
+
+    (
+        month_choice,
+        state_choice,
+        category_choice,
+        payment_choice,
+        review_choice,
+        status_choice,
+    ) = filters
 
     filtered = filter_data(df, *filters)
     selected_category = st.session_state.get("selected_category")
@@ -245,20 +240,29 @@ def main():
         else filtered
     )
 
-    with corr_box:
-        corr_fig = correlation_heatmap(filtered_for_click)
-        if corr_fig:
-            with bordered_container():
-                st.markdown(
-                    '<div class="chart-title">Correlation Heatmap</div>',
-                    unsafe_allow_html=True,
-                )
-                st.plotly_chart(set_fig_background(corr_fig), use_container_width=True)
+    # KPI data should always include the previous month for comparison when only one month is selected.
+    kpi_months = list(month_choice)
+    if len(kpi_months) == 1:
+        current_period = pd.Period(kpi_months[0], freq="M")
+        prev_period = (current_period - 1).strftime("%Y-%m")
+        if prev_period in df["year_month"].unique():
+            kpi_months = [prev_period, kpi_months[0]]
+    kpi_df = filter_data(
+        df,
+        kpi_months,
+        state_choice,
+        category_choice,
+        payment_choice,
+        review_choice,
+        status_choice,
+    )
+    if selected_category:
+        kpi_df = kpi_df[kpi_df["top_category"] == selected_category]
 
     with main_col:
 
 
-        render_kpis(filtered_for_click)
+        render_kpis(kpi_df)
         st.markdown('<div style="height:4px"></div>', unsafe_allow_html=True)
 
         row1_col1, row1_col2 = st.columns(2, gap="medium")
@@ -275,28 +279,33 @@ def main():
 
         # Interactive category filter (click a bar to filter all charts)
         def render_category_selector(dataframe, current_selection=None):
-            fig = top_categories_chart(dataframe, height=CHART_HEIGHT)
+            fig = top_categories_chart(
+                dataframe,
+                height=CHART_HEIGHT,
+                selected_category=current_selection,
+            )
             with bordered_container():
                 st.markdown(
                     '<div class="chart-title">Top Categories (click to filter)</div>',
                     unsafe_allow_html=True,
                 )
                 if plotly_events:
+                    component_key = f"top_category_click_{current_selection or 'none'}"
                     events = plotly_events(
                         fig,
                         click_event=True,
                         hover_event=False,
                         select_event=False,
-                        key="top_category_click",
+                        key=component_key,
                         override_height=CHART_HEIGHT,
                     )
                     if events:
                         chosen = events[0].get("y") or events[0].get("label")
                         if chosen:
-                            if current_selection and chosen == current_selection:
-                                st.session_state["selected_category"] = None
-                            else:
-                                st.session_state["selected_category"] = chosen
+                            new_selection = None if current_selection == chosen else chosen
+                            if st.session_state.get("selected_category") != new_selection:
+                                st.session_state["selected_category"] = new_selection
+                                st.rerun()
                 else:
                     st.plotly_chart(set_fig_background(fig), use_container_width=True)
                     if st.session_state.get("selected_category") is None:
@@ -309,10 +318,9 @@ def main():
         row2_col1, row2_col2 = st.columns(2, gap="medium")
         with row2_col1:
             render_category_selector(filtered, selected_category)
-            if selected_category := st.session_state.get("selected_category"):
-                st.caption(
-                    f"Filtering category: {selected_category} (click same bar to clear)"
-                )
+
+        selected_category = st.session_state.get("selected_category")
+
         # Apply interactive category filter to downstream charts
         filtered_for_click = (
             filtered[filtered["top_category"] == selected_category]
@@ -328,10 +336,17 @@ def main():
 
         row3_col1, row3_col2 = st.columns(2, gap="medium")
         with row3_col1:
-            chart_card(
-                "Delivery Performance by State",
-                delivery_by_state_chart(filtered_for_click, height=CHART_HEIGHT),
-            )
+            corr_fig = correlation_heatmap(filtered_for_click, height=CHART_HEIGHT)
+            if corr_fig:
+                chart_card(
+                    "Correlation Heatmap (A–E)",
+                    corr_fig,
+                )
+            else:
+                st.info(
+                    "Not enough numeric data to compute correlations for the selected filters.",
+                    icon="ℹ️",
+                )
         with row3_col2:
             chart_card(
                 "Delivery Time Distribution",
