@@ -65,6 +65,21 @@ def load_dataset():
             return "Late"
         return "On Time"
 
+    def classify_delivery_bucket(x):
+        if pd.isna(x):
+            return np.nan
+        if x < -14:
+            return "Early >14d"
+        if x < -7:
+            return "Early 7-14d"
+        if x <= 0:
+            return "Early 0-7d"
+        if x <= 7:
+            return "Late 1-7d"
+        if x <= 14:
+            return "Late 8-14d"
+        return "Late >14d"
+
     raw["delivery_status"] = raw["delay_days"].apply(classify_delay)
 
     value_col = "payment_value" if "payment_value" in raw.columns else None
@@ -159,6 +174,7 @@ def load_dataset():
         grouped["order_delivered_customer_date"] - grouped["order_delivered_carrier_date"]
     ).dt.total_seconds() / 3600
     grouped["on_time"] = grouped["order_delivered_customer_date"] <= grouped["order_estimated_delivery_date"]
+    grouped["delivery_bucket"] = grouped["delay_days"].apply(classify_delivery_bucket)
 
     df = grouped.reset_index()
     df["purchase_date"] = df["order_purchase_timestamp"].dt.date

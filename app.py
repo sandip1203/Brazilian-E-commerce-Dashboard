@@ -14,7 +14,7 @@ from dashboard.charts import (
     top_categories_chart,
     payment_mix_chart,
     delivery_hist_chart,
-    revenue_state_chart,
+    review_timeliness_chart,
 )
 
 ACCENT_COLOR = "#f59e0b"
@@ -268,8 +268,8 @@ def main():
         row1_col1, row1_col2 = st.columns(2, gap="medium")
         with row1_col1:
             chart_card(
-                "Revenue by State",
-                revenue_state_chart(filtered_for_click, height=CHART_HEIGHT),
+                "Review Score vs Delivery Timeliness",
+                review_timeliness_chart(filtered_for_click, height=CHART_HEIGHT),
             )
         with row1_col2:
             chart_card(

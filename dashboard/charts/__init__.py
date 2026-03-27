@@ -4,7 +4,7 @@ from .monthly_revenue import monthly_revenue_chart
 from .top_categories import top_categories_chart
 from .payment_mix import payment_mix_chart
 from .delivery_hist import delivery_hist_chart
-from .revenue_state import revenue_state_chart
+from .review_timeliness import review_timeliness_chart
 from .correlation import correlation_heatmap
 
 __all__ = [
@@ -12,6 +12,6 @@ __all__ = [
     "top_categories_chart",
     "payment_mix_chart",
     "delivery_hist_chart",
-    "revenue_state_chart",
+    "review_timeliness_chart",
     "correlation_heatmap",
 ]
