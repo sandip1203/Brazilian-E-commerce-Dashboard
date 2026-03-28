@@ -4,11 +4,6 @@ import streamlit as st
 from dashboard.data import load_dataset, filter_data
 from dashboard.kpis import render_kpis
 from dashboard.charts import correlation_heatmap
-try:
-    # Enables click-to-filter on Plotly charts inside Streamlit
-    from streamlit_plotly_events import plotly_events
-except ImportError:  # pragma: no cover - runtime dependency
-    plotly_events = None
 from dashboard.charts import (
     monthly_revenue_chart,
     top_categories_chart,
@@ -289,31 +284,23 @@ def main():
                     '<div class="chart-title">Top Categories (click to filter)</div>',
                     unsafe_allow_html=True,
                 )
-                if plotly_events:
-                    component_key = f"top_category_click_{current_selection or 'none'}"
-                    events = plotly_events(
-                        fig,
-                        click_event=True,
-                        hover_event=False,
-                        select_event=False,
-                        key=component_key,
-                        override_height=CHART_HEIGHT,
-                    )
-                    if events:
-                        chosen = events[0].get("y") or events[0].get("label")
-                        if chosen:
-                            new_selection = None if current_selection == chosen else chosen
-                            if st.session_state.get("selected_category") != new_selection:
-                                st.session_state["selected_category"] = new_selection
-                                st.rerun()
-                else:
-                    st.plotly_chart(set_fig_background(fig), use_container_width=True)
-                    if st.session_state.get("selected_category") is None:
-                        st.info(
-                            "Install `streamlit-plotly-events` for click-to-filter: "
-                            "`pip install streamlit-plotly-events`",
-                            icon="🖱️",
-                        )
+                component_key = f"top_category_click_{current_selection or 'none'}"
+                event = st.plotly_chart(
+                    set_fig_background(fig),
+                    use_container_width=True,
+                    key=component_key,
+                    on_select="rerun",
+                    selection_mode="points",
+                    config={"displayModeBar": False},
+                )
+                points = event.selection.points if event else []
+                if points:
+                    chosen = points[0].get("y") or points[0].get("label")
+                    if chosen:
+                        new_selection = None if current_selection == chosen else chosen
+                        if st.session_state.get("selected_category") != new_selection:
+                            st.session_state["selected_category"] = new_selection
+                            st.rerun()
 
         row2_col1, row2_col2 = st.columns(2, gap="medium")
         with row2_col1:
